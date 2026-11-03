@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { checkoutInput,productInput,integer } from '../src/domain.js';
 import { placeOrder } from '../src/orders.js';
+import { createApp } from '../src/app.js';
 const customer={name:'Aziza Karimova',email:'AZIZA@example.test',city:'Tashkent',address:'Chilonzor 12, house 7'};
 test('cart merges duplicate IDs, sorts locks, normalizes email, ignores client prices',()=>{
  const input=checkoutInput({...customer,items:[{product_id:9,quantity:2,price:1},{product_id:2,quantity:1},{product_id:9,quantity:3}]});
@@ -21,3 +22,18 @@ test('checkout prices on server and splits totals between sellers',async()=>{
 });
 test('insufficient stock rolls back and never writes an order',async()=>{const pool=fakePool([{id:1,seller_id:1,price:'1000',stock:0}]);await assert.rejects(placeOrder(pool,{...customer,items:[{product_id:1,quantity:1}]}),{status:409});assert.equal(pool.calls.at(-2).sql,'ROLLBACK');assert.equal(pool.calls.some(c=>c.sql.startsWith('INSERT')),false);assert.equal(pool.calls.at(-1).sql,'RELEASE');});
 test('unapproved or missing products roll back',async()=>{const pool=fakePool([]);await assert.rejects(placeOrder(pool,{...customer,items:[{product_id:1,quantity:1}]}),{status:409});assert.equal(pool.calls.at(-2).sql,'ROLLBACK');});
+test('catalog price and stock filters reach both product and count queries',async()=>{
+ const calls=[];
+ const pool={async query(sql,params){calls.push({sql,params});return sql.startsWith('SELECT count')?{rows:[{total:1}]}:{rows:[{id:2,name:'Bowl'}]};}};
+ let server;
+ await new Promise(resolve=>{server=createApp(pool,{}).listen(0,'127.0.0.1',resolve);});
+ try{
+  const base=`http://127.0.0.1:${server.address().port}`;
+  const valid=await fetch(`${base}/api/products?minPrice=1000&maxPrice=200000&inStock=1`);
+  assert.equal(valid.status,200);
+  assert.deepEqual(calls[0].params,['',null,null,1000,200000,true,0]);
+  assert.deepEqual(calls[1].params,['',null,null,1000,200000,true]);
+  assert.match(calls[0].sql,/p\.stock > 0/);
+  assert.equal((await fetch(`${base}/api/products?minPrice=300000&maxPrice=1000`)).status,400);
+ }finally{await new Promise(resolve=>server.close(resolve));}
+});
