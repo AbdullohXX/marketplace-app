@@ -56,3 +56,7 @@ Run `sql/03_queries.sql` in pgAdmin or `psql` to see 20 business questions and t
 ## Deploy
 
 See [deployment instructions](docs/deployment.md). No hosting account, Git push, public deployment, or real payment collection is performed automatically. The report and demo outline in `docs/` are templates to fill with your own verified results, screenshots, and explanation. Commit history over multiple days and a live defense must be completed by the student.
+
+## Account and workspace release
+
+See [release notes](docs/workspace-release.md) and [permission matrix](docs/permissions.md) for account setup, seller/admin routes, migrations and verification limits. Run `npm run test:workspace` for the isolated SQL/browser workflow suite. Email delivery is currently disabled; SMTP configuration is needed to enable verification and recovery.

@@ -12,13 +12,27 @@
     "db:setup": "node --env-file-if-exists=.env scripts/setup.js",
     "db:benchmark": "node --env-file-if-exists=.env scripts/benchmark.js",
     "test": "node test/unit.test.js",
-    "test:integration": "node --env-file-if-exists=.env test/integration.test.js"
+    "test:integration": "node test/workspace.test.js",
+    "test:workspace": "node test/workspace.test.js",
+    "dev:isolated": "node test/development.js --serve",
+    "test:integration:legacy": "node --env-file-if-exists=.env test/integration.test.js"
   },
   "dependencies": {
+    "argon2": "0.45.2",
+    "connect-pg-simple": "10.0.0",
     "express": "5.1.0",
     "express-rate-limit": "8.7.3",
+    "express-session": "1.19.0",
     "helmet": "8.1.0",
     "mongodb": "6.20.0",
-    "pg": "8.16.3"
+    "multer": "2.5.0",
+    "nodemailer": "10.3.1",
+    "otplib": "13.6.0",
+    "pg": "8.16.3",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.15",
+    "playwright": "1.64.1"
   }
 }

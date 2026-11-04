@@ -7,7 +7,7 @@ const node = (tag, className, value) => {
 };
 const productImage = product => {
   const image = node('img', 'experience-product-image');
-  image.src = `/assets/product-${((product.id - 1) % 12) + 1}.svg`;
+  image.src = product.media_url || `/assets/product-${((product.id - 1) % 12) + 1}.svg`;
   image.alt = product.name;
   image.width = 480;
   image.height = 480;
@@ -21,7 +21,12 @@ async function productById(id) {
 }
 function makeDialog(className) {
   const dialog = node('dialog', className);
+  let opener;
+  const show=dialog.showModal.bind(dialog);
+  dialog.showModal=()=>{opener=document.activeElement;show();};
+  dialog.addEventListener('close',()=>{if(opener?.isConnected) opener.focus();});
   dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+  dialog.setAttribute('aria-label', 'Shopping panel');
   document.body.append(dialog);
   return dialog;
 }
@@ -165,7 +170,11 @@ document.querySelector('.bag-link')?.addEventListener('click', event => {
 
 const searchDialog = makeDialog('experience-dialog search-dialog');
 let searchGeneration = 0;
+let searchController;
+searchDialog.addEventListener('close', () => { searchGeneration++; searchController?.abort(); });
 function openSearch() {
+  searchGeneration++;
+  searchController?.abort();
   const shell = node('div', 'search-shell');
   const top = node('div', 'search-top');
   const input = node('input', 'search-input');
@@ -190,7 +199,9 @@ function openSearch() {
     results.replaceChildren(node('p', 'search-help', query ? 'Searching…' : 'Try “ceramic”, “bag”, or “home”.'));
     if (!query) return;
     try {
-      const response = await fetch(`/api/products?search=${encodeURIComponent(query)}`);
+      searchController?.abort();
+      searchController = new AbortController();
+      const response = await fetch(`/api/products?search=${encodeURIComponent(query)}`, { signal: searchController.signal });
       if (!response.ok) throw new Error('Search unavailable');
       const data = await response.json();
       if (run !== searchGeneration || !searchDialog.open) return;
@@ -212,7 +223,7 @@ function openSearch() {
       if (run === searchGeneration) results.replaceChildren(node('p', 'experience-error', 'Search is temporarily unavailable.'));
     }
   }
-  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 220); });
+  input.addEventListener('input', () => { searchGeneration++; searchController?.abort(); clearTimeout(timer); timer = setTimeout(search, 220); });
   input.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -258,7 +269,7 @@ async function decorateCatalog() {
     tiles.append(tile);
   }
   stories.append(tiles);
-  $('.benefits')?.after(stories);
+  $('.maker-banner')?.before(stories);
   const note = node('section', 'trust-strip');
   note.append(node('span', 'experience-kicker', 'WHY SAVDO'), node('h2', '', 'Discover well. Shop simply.'));
   for (const [icon, title, body] of [
@@ -278,3 +289,63 @@ if (document.readyState === 'complete') decorateCatalog();
 else window.addEventListener('DOMContentLoaded', decorateCatalog);
 
 window.SavdoExperience = { openQuickView, openBag, openSearch };
+
+
+// Progressive motion: content stays visible when animation APIs are unavailable.
+const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+const revealed = new WeakSet();
+const revealSelector = '.product-card, .directory-tile, .story-tile, .trust-item, .directory-heading, .hero';
+const revealObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    revealObserver.unobserve(entry.target);
+    if (!motionPreference.matches && entry.target.animate) entry.target.animate([
+      { opacity: 0, transform: 'translateY(18px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
+}, { threshold: .08 }) : null;
+function observeCards() {
+  document.querySelectorAll(revealSelector).forEach(card => {
+    if (revealed.has(card)) return;
+    revealed.add(card);
+    revealObserver?.observe(card);
+  });
+}
+let revealFrame;
+new MutationObserver(() => {
+  cancelAnimationFrame(revealFrame);
+  revealFrame = requestAnimationFrame(observeCards);
+}).observe(document.querySelector('#app'), { childList: true, subtree: true });
+observeCards();
+window.addEventListener('savdo:cartchange', () => {
+  const badge = document.querySelector('#bag-count');
+  if (!motionPreference.matches) badge?.animate?.([
+    { transform: 'scale(1)' }, { transform: 'scale(1.3)' }, { transform: 'scale(1)' }
+  ], { duration: 300 });
+});
+const backTop = node('button', 'back-to-top', '↑');
+backTop.type = 'button';
+backTop.setAttribute('aria-label', 'Back to top');
+backTop.hidden = true;
+backTop.addEventListener('click', () => {
+  document.querySelector('#app')?.focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: motionPreference.matches ? 'instant' : 'smooth' });
+});
+document.body.append(backTop);
+let scrollFrame;
+function updateScrollUI() {
+  scrollFrame = null;
+  backTop.hidden = window.scrollY < 600;
+  document.querySelector('header')?.classList.toggle('header-scrolled', window.scrollY > 24);
+}
+window.addEventListener('scroll', () => {
+  if (!scrollFrame) scrollFrame = requestAnimationFrame(updateScrollUI);
+}, { passive: true });
+updateScrollUI();
+
+ document.addEventListener('error', event => { if(event.target instanceof HTMLImageElement){event.target.alt='Product image unavailable';event.target.classList.add('image-unavailable');} },true);
+
+import './discover.js';
+
+import './identity.js';

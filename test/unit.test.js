@@ -37,3 +37,36 @@ test('catalog price and stock filters reach both product and count queries',asyn
   assert.equal((await fetch(`${base}/api/products?minPrice=300000&maxPrice=1000`)).status,400);
  }finally{await new Promise(resolve=>server.close(resolve));}
 });
+
+test('admin product reads reject missing and incorrect tokens before accessing data',async()=>{
+ const previous=process.env.ADMIN_TOKEN;process.env.ADMIN_TOKEN='local-test-only-token-12345678901234567890';
+ const calls=[];const pool={async query(sql,params){calls.push({sql,params});return {rows:params[0]===7?[{id:7,name:'Draft',approved:false}]:[]};}};
+ let server;await new Promise(resolve=>{server=createApp(pool,{}).listen(0,'127.0.0.1',resolve);});
+ try {
+  const base=`http://127.0.0.1:${server.address().port}/api/admin/products/`;
+  assert.equal((await fetch(base+'7')).status,401);
+  assert.equal((await fetch(base+'7',{headers:{Authorization:'Bearer wrong'}})).status,401);
+  assert.equal(calls.length,0);
+  assert.equal((await fetch(base+'7',{headers:{Authorization:'Bearer '+process.env.ADMIN_TOKEN}})).status,401);
+  assert.equal(calls.length,0);
+ } finally {await new Promise(resolve=>server.close(resolve));if(previous===undefined)delete process.env.ADMIN_TOKEN;else process.env.ADMIN_TOKEN=previous;}
+});
+
+test('retry after a committed checkout returns the stored response without changing stock',async()=>{
+ const pool=fakePool([{id:1,seller_id:2,price:'95000',stock:10}]);
+ const connect=pool.connect.bind(pool);let saved;
+ pool.connect=async()=>{const client=await connect();const query=client.query.bind(client);return {release:client.release,async query(sql,params){
+  if(sql.startsWith('SELECT fingerprint'))return {rows:saved?[saved]:[]};
+  if(sql.startsWith('INSERT INTO checkout_requests'))saved={fingerprint:params[1],response:JSON.parse(params[2])};
+  return query(sql,params);
+ }};};
+ const body={...customer,expectedTotal:95000,items:[{product_id:1,quantity:1}]};const key='12345678-1234-1234-1234-123456789012';
+ const first=await placeOrder(pool,body,key);const again=await placeOrder(pool,body,key);
+ assert.deepEqual(again,first);assert.equal(pool.calls.filter(c=>c.sql.startsWith('UPDATE products')).length,1);
+ await assert.rejects(placeOrder(pool,{...body,address:'Another test address'},key),{status:409});
+});
+test('changed checkout total rolls back before writing any customer or order',async()=>{
+ const pool=fakePool([{id:1,seller_id:2,price:'96000',stock:10}]);
+ await assert.rejects(placeOrder(pool,{...customer,expectedTotal:95000,items:[{product_id:1,quantity:1}]}),{status:409});
+ assert.equal(pool.calls.some(c=>c.sql.startsWith('INSERT')),false);
+});

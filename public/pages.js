@@ -36,17 +36,16 @@ function failure(error) {
 }
 async function categories() {
   const items = await api('/categories');
-  const collections = await Promise.all(items.map(item => api(`/products?category=${item.id}`)));
   app.replaceChildren(heading('THE WHOLE COLLECTION', 'Explore by category', 'Find the things you need and the things you did not know you wanted.'));
   const grid = el('div', 'directory-grid categories-grid');
   for (const [index, category] of items.entries()) {
-    const matches = collections[index].products;
+    const matches = (category.preview_ids || []).map(id => ({ id }));
     const tile = link('', `/?category=${category.id}#collection`, 'directory-tile category-tile');
     const art = el('div', 'directory-art');
     for (const product of matches.slice(0, 2)) art.append(image(product));
     if (!matches.length) art.append(el('span', '', category.icon || '✳'));
     const copy = el('div', 'directory-copy');
-    copy.append(el('small', '', `${collections[index].total} finds in the collection`), el('h2', '', category.name), el('span', '', 'Explore category ↗'));
+    copy.append(el('small', '', `${category.product_count} finds in the collection`), el('h2', '', category.name), el('span', '', 'Explore category ↗'));
     tile.append(art, copy);
     grid.append(tile);
   }
@@ -54,16 +53,15 @@ async function categories() {
 }
 async function shops() {
   const sellers = await api('/sellers');
-  const collections = await Promise.all(sellers.map(seller => api(`/products?seller=${seller.id}`)));
   app.replaceChildren(heading('THE PEOPLE BEHIND THE FINDS', 'Meet the shops', 'Explore independent sellers from across Uzbekistan.'));
   const grid = el('div', 'directory-grid shops-grid');
   for (const [index, seller] of sellers.entries()) {
-    const matches = collections[index].products;
-    const tile = link('', `/shop.html?id=${seller.id}`, 'directory-tile shop-tile');
+    const matches = (seller.preview_ids || []).map(id => ({ id }));
+    const tile = link('', seller.slug?`/shops/${seller.slug}`:`/shop.html?id=${seller.id}`, 'directory-tile shop-tile');
     const art = el('div', 'directory-art');
     for (const product of matches.slice(0, 3)) art.append(image(product));
     const copy = el('div', 'directory-copy');
-    copy.append(el('small', '', `${seller.city} · ${collections[index].total} finds`), el('h2', '', seller.name), el('span', '', 'Visit shop ↗'));
+    copy.append(el('small', '', `${seller.city} · ${seller.product_count} finds`), el('h2', '', seller.name), el('span', '', 'Visit shop ↗'));
     tile.append(art, copy);
     grid.append(tile);
   }
@@ -75,12 +73,19 @@ async function shop() {
   const sellers = await api('/sellers');
   const seller = sellers.find(item => item.id === id);
   if (!seller) throw new Error('This shop is not available.');
-  const data = await api(`/products?seller=${id}`);
+  const requestedPage = new URLSearchParams(location.search).get('page') || '1';
+  const data = await api(`/products?seller=${id}&page=${encodeURIComponent(requestedPage)}`);
   app.replaceChildren(link('← All shops', '/shops.html', 'breadcrumb'), heading(`INDEPENDENT SELLER · ${seller.city.toUpperCase()}`, seller.name, `Discover ${data.total} considered finds from ${seller.city}.`));
-  if (!data.products.length) return app.append(empty('New finds are coming', 'This seller has no published products right now.', 'Browse other shops', '/shops.html'));
+  if (!data.products.length) return app.append(empty('No products on this page', 'Return to the first page or explore another shop.', 'First page', `/shop.html?id=${id}`));
   const grid = el('div', 'product-grid');
   grid.append(...data.products.map(card));
   app.append(grid);
+  const pagination = el('nav', 'shop-pagination');
+  pagination.setAttribute('aria-label', 'Shop product pages');
+  if (data.page > 1) pagination.append(link('Previous page', `/shop.html?id=${id}&page=${data.page-1}`, 'btn secondary'));
+  pagination.append(el('span', '', `Page ${data.page} of ${Math.max(1,data.pages)}`));
+  if (data.page < data.pages) pagination.append(link('Next page', `/shop.html?id=${id}&page=${data.page+1}`, 'btn secondary'));
+  app.append(pagination);
 }
 async function saved() {
   app.replaceChildren(heading('YOUR PERSONAL EDIT', 'Saved finds', 'Keep your favorite pieces close while you decide. Saved on this browser.'));

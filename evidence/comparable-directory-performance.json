@@ -1,0 +1,132 @@
+{
+  "environment": "Loopback Express + PGlite PostgreSQL engine, 1013 products, same process; one warmup and five sequential samples per strategy. Compares request strategies on the same updated backend, not before/after production latency.",
+  "samples": [
+    {
+      "strategy": "previous-directory-fanout",
+      "sample": 1,
+      "ms": 25.81,
+      "sqlQueries": 11,
+      "requests": 6,
+      "bytes": 20647
+    },
+    {
+      "strategy": "previous-directory-fanout",
+      "sample": 2,
+      "ms": 28.48,
+      "sqlQueries": 11,
+      "requests": 6,
+      "bytes": 20647
+    },
+    {
+      "strategy": "previous-directory-fanout",
+      "sample": 3,
+      "ms": 22.61,
+      "sqlQueries": 11,
+      "requests": 6,
+      "bytes": 20647
+    },
+    {
+      "strategy": "previous-directory-fanout",
+      "sample": 4,
+      "ms": 24.46,
+      "sqlQueries": 11,
+      "requests": 6,
+      "bytes": 20647
+    },
+    {
+      "strategy": "previous-directory-fanout",
+      "sample": 5,
+      "ms": 25.79,
+      "sqlQueries": 11,
+      "requests": 6,
+      "bytes": 20647
+    },
+    {
+      "strategy": "aggregate-directory",
+      "sample": 1,
+      "ms": 2.68,
+      "sqlQueries": 1,
+      "requests": 1,
+      "bytes": 446
+    },
+    {
+      "strategy": "aggregate-directory",
+      "sample": 2,
+      "ms": 2.57,
+      "sqlQueries": 1,
+      "requests": 1,
+      "bytes": 446
+    },
+    {
+      "strategy": "aggregate-directory",
+      "sample": 3,
+      "ms": 2.75,
+      "sqlQueries": 1,
+      "requests": 1,
+      "bytes": 446
+    },
+    {
+      "strategy": "aggregate-directory",
+      "sample": 4,
+      "ms": 2.65,
+      "sqlQueries": 1,
+      "requests": 1,
+      "bytes": 446
+    },
+    {
+      "strategy": "aggregate-directory",
+      "sample": 5,
+      "ms": 2.6,
+      "sqlQueries": 1,
+      "requests": 1,
+      "bytes": 446
+    }
+  ],
+  "plan": [
+    {
+      "QUERY PLAN": "Limit  (cost=8.18..8.18 rows=1 width=280) (actual time=0.408..0.430 rows=12.00 loops=1)"
+    },
+    {
+      "QUERY PLAN": "  Buffers: shared hit=18"
+    },
+    {
+      "QUERY PLAN": "  ->  Sort  (cost=8.18..8.18 rows=1 width=280) (actual time=0.403..0.411 rows=12.00 loops=1)"
+    },
+    {
+      "QUERY PLAN": "        Sort Key: id DESC"
+    },
+    {
+      "QUERY PLAN": "        Sort Method: top-N heapsort  Memory: 18kB"
+    },
+    {
+      "QUERY PLAN": "        Buffers: shared hit=18"
+    },
+    {
+      "QUERY PLAN": "        ->  Index Scan using products_seller_idx on products  (cost=0.15..8.17 rows=1 width=280) (actual time=0.043..0.225 rows=203.00 loops=1)"
+    },
+    {
+      "QUERY PLAN": "              Index Cond: (seller_id = 1)"
+    },
+    {
+      "QUERY PLAN": "              Filter: (active AND approved)"
+    },
+    {
+      "QUERY PLAN": "              Index Searches: 1"
+    },
+    {
+      "QUERY PLAN": "              Buffers: shared hit=18"
+    },
+    {
+      "QUERY PLAN": "Planning:"
+    },
+    {
+      "QUERY PLAN": "  Buffers: shared hit=1"
+    },
+    {
+      "QUERY PLAN": "Planning Time: 0.129 ms"
+    },
+    {
+      "QUERY PLAN": "Execution Time: 0.507 ms"
+    }
+  ]
+}

@@ -75,4 +75,10 @@ CREATE OR REPLACE VIEW seller_sales AS
 SELECT s.id, s.name, s.city, count(so.id)::integer AS order_count,
        coalesce(sum(so.total) FILTER(WHERE so.status <> 'cancelled'),0) AS revenue
 FROM sellers s LEFT JOIN seller_orders so ON so.seller_id=s.id GROUP BY s.id;
+CREATE TABLE IF NOT EXISTS checkout_requests (
+  request_key uuid PRIMARY KEY,
+  fingerprint text NOT NULL,
+  response jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 COMMIT;
