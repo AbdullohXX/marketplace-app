@@ -1,4 +1,4 @@
-// Discover merchandising uses the existing category API and product illustrations.
+// Featured collections use the existing category API and clearly labelled demo catalog photos.
 const element=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls||'';if(text)n.textContent=text;return n;};
 window.addEventListener('savdo:catalogready',async()=>{
  if(document.querySelector('.discover-banner'))return;
@@ -8,13 +8,13 @@ window.addEventListener('savdo:catalogready',async()=>{
   const hero=document.querySelector('.hero');if(!hero)return;
   const region=element('section','discover-banner');region.setAttribute('aria-label','Featured collections');
   const content=element('div','discover-slides');const dots=element('div','discover-dots');let active=0;const slides=[];const controls=[];
-  const edits=[['Everyday essentials.\nExtraordinary finds.','Discover the electronics collection.',1],['A little care\nfor your home.','Explore thoughtful pieces for everyday living.',2],['Find your\neveryday style.','Discover the fashion collection.',3]];
+  const edits=[['Sound for\nevery day.','Browse the electronics collection.','01-headphones'],['Make room for\na slower morning.','Explore home pieces for daily rituals.','07-tea'],['Color for\nevery season.','Discover the fashion collection.','03-scarves']];
   categories.slice(0,3).forEach((category,index)=>{
    const [heading,description,imageId]=edits[index];
    const slide=element('div',`discover-slide discover-slide-${index}`);slide.hidden=index!==0;
    const copy=element('div','discover-banner-copy');copy.append(element('span','discover-eyebrow',category.name),element('h1','',heading),element('p','',description));
    const action=element('a','btn','Explore collection →');action.href=`/?category=${category.id}#collection`;copy.append(action);
-   const art=element('div','discover-banner-art');const image=element('img','');image.src=`/assets/product-${imageId}.svg`;image.alt='';image.width=480;image.height=480;art.append(image);
+   const art=element('div','discover-banner-art');const image=element('img','');image.src=`/assets/demo/${imageId}.jpg`;image.alt='';image.width=480;image.height=480;art.append(image);
    slide.append(copy,art);slides.push(slide);content.append(slide);
    const dot=element('button','discover-dot');dot.type='button';dot.setAttribute('aria-label',`Show ${category.name} collection`);dot.setAttribute('aria-pressed',String(index===0));dot.addEventListener('click',()=>show(index));controls.push(dot);dots.append(dot);
   });

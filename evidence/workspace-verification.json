@@ -1,8 +1,8 @@
 {
   "checks": [
     "Public registration cannot grant a privileged role; bootstrap and MFA protect staff tools.",
-    "Seller application persists, changes requested, corrected and approved; provisional shop becomes active.",
-    "Raster upload persists; drafts are private; stale edits rejected; moderation feedback and corrected approval publish the product.",
+    "Unverified seller application persists, changes requested, corrected and approved; provisional shop becomes active.",
+    "Raster upload persists; drafts are private; storefront selection is owner-scoped; stale edits rejected; moderation feedback and corrected approval publish the product.",
     "Simultaneous same-key requests and retry after a committed response return one order and decrement stock once (serialized PGlite test adapter).",
     "Seller sees only own order portion; fulfillment updates persist and appear in buyer history. Repeated status update is safe.",
     "Final-item competition and changed-price rejection checked in isolated SQL adapter; real multi-connection PostgreSQL locking still requires staging.",
@@ -11,6 +11,6 @@
     "Browser registration and application draft saving persist across refresh.",
     "Suspension interrupts existing sessions; disabled email recovery reports unavailable."
   ],
-  "queryCount": 638,
+  "queryCount": 643,
   "limits": "PGlite runs PostgreSQL SQL in-process; transactions serialized by adapter and advisory lock function is a test shim. Mongo media uses an in-memory substitute. Production PostgreSQL/MongoDB checks are separate."
 }

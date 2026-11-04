@@ -232,12 +232,19 @@ function openSearch() {
   });
   search();
 }
-const searchButton = node('button', 'header-search', '⌕');
-searchButton.type = 'button';
-searchButton.setAttribute('aria-label', 'Search products');
-searchButton.title = 'Search products (Ctrl+K)';
-searchButton.addEventListener('click', openSearch);
-document.querySelector('.bag-link')?.before(searchButton);
+const headerSearch = node('form', 'header-search-form');
+headerSearch.action = '/';
+headerSearch.method = 'GET';
+const headerSearchInput = node('input');
+headerSearchInput.type = 'search';
+headerSearchInput.name = 'search';
+headerSearchInput.placeholder = 'Search products';
+headerSearchInput.setAttribute('aria-label', 'Search products');
+headerSearchInput.value = new URLSearchParams(location.search).get('search') || '';
+const headerSearchSubmit = node('button', '', 'Search');
+headerSearchSubmit.type = 'submit';
+headerSearch.append(headerSearchInput, headerSearchSubmit);
+document.querySelector('.bag-link')?.before(headerSearch);
 document.addEventListener('keydown', event => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault();

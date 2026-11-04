@@ -28,8 +28,8 @@ export function createApp(pool, mongo) {
     await pool.query('SELECT 1'); await mongo.command({ ping: 1 });
     res.json({ status: 'ok', postgres: 'connected', mongodb: 'connected' });
   });
-  app.get('/api/categories', async (req,res) => res.json((await pool.query('SELECT c.id,c.name,c.icon,c.parent_id,c.attributes,count(p.id)::int AS product_count,(array_agg(p.id ORDER BY p.id DESC) FILTER (WHERE p.id IS NOT NULL))[1:2] AS preview_ids FROM categories c LEFT JOIN products p ON p.category_id=c.id AND p.active AND p.approved AND EXISTS(SELECT 1 FROM sellers visible_shop WHERE visible_shop.id=p.seller_id AND visible_shop.operating_state=$$active$$ AND visible_shop.is_approved) GROUP BY c.id ORDER BY c.id')).rows));
-  app.get('/api/sellers', async (req,res) => res.json((await pool.query('SELECT s.id,s.name,s.city,s.description,count(p.id)::int AS product_count,(array_agg(p.id ORDER BY p.id DESC) FILTER (WHERE p.id IS NOT NULL))[1:3] AS preview_ids FROM sellers s LEFT JOIN products p ON p.seller_id=s.id AND p.active AND p.approved AND EXISTS(SELECT 1 FROM sellers visible_shop WHERE visible_shop.id=p.seller_id AND visible_shop.operating_state=$$active$$ AND visible_shop.is_approved) WHERE s.is_approved AND s.operating_state<>$$suspended$$ GROUP BY s.id ORDER BY s.id')).rows));
+  app.get('/api/categories', async (req,res) => res.json((await pool.query('SELECT c.id,c.name,c.icon,c.parent_id,c.attributes,count(p.id)::int AS product_count,(array_agg(p.id ORDER BY p.id DESC) FILTER (WHERE p.id IS NOT NULL))[1:2] AS preview_ids,(array_agg(p.media_url ORDER BY p.id DESC) FILTER (WHERE p.id IS NOT NULL))[1:2] AS preview_media FROM categories c LEFT JOIN products p ON p.category_id=c.id AND p.active AND p.approved AND EXISTS(SELECT 1 FROM sellers visible_shop WHERE visible_shop.id=p.seller_id AND visible_shop.operating_state=$$active$$ AND visible_shop.is_approved) GROUP BY c.id ORDER BY c.id')).rows));
+  app.get('/api/sellers', async (req,res) => res.json((await pool.query('SELECT s.id,s.name,s.city,s.description,s.demo,s.slug,count(p.id)::int AS product_count,(array_agg(p.id ORDER BY p.id DESC) FILTER (WHERE p.id IS NOT NULL))[1:3] AS preview_ids,(array_agg(p.media_url ORDER BY p.id DESC) FILTER (WHERE p.id IS NOT NULL))[1:3] AS preview_media FROM sellers s LEFT JOIN products p ON p.seller_id=s.id AND p.active AND p.approved AND EXISTS(SELECT 1 FROM sellers visible_shop WHERE visible_shop.id=p.seller_id AND visible_shop.operating_state=$$active$$ AND visible_shop.is_approved) WHERE s.is_approved AND s.operating_state<>$$suspended$$ GROUP BY s.id ORDER BY s.id')).rows));
   app.get('/api/products', async (req,res) => {
     const search = req.query.search === undefined ? '' : text(req.query.search, 'Search', 0, 100);
     const category = req.query.category ? integer(req.query.category, 'Category') : null;
@@ -45,17 +45,18 @@ export function createApp(pool, mongo) {
     if (!sort) throw new HttpError(400,'Invalid sort');
     const where = `p.active AND p.approved AND EXISTS(SELECT 1 FROM sellers visible_shop WHERE visible_shop.id=p.seller_id AND visible_shop.operating_state=$$active$$ AND visible_shop.is_approved) AND ($1='' OR p.name ILIKE '%'||$1||'%' OR p.description ILIKE '%'||$1||'%') AND ($2::int IS NULL OR p.category_id=$2) AND ($3::int IS NULL OR p.seller_id=$3) AND ($4::bigint IS NULL OR p.price >= $4) AND ($5::bigint IS NULL OR p.price <= $5) AND (NOT $6::boolean OR p.stock > 0)`;
     const values = [search,category,seller,minPrice,maxPrice,inStock];
-    const { rows } = await pool.query(`SELECT p.*,s.name AS seller,c.name AS category FROM products p JOIN sellers s ON s.id=p.seller_id JOIN categories c ON c.id=p.category_id WHERE ${where} ORDER BY ${sort} LIMIT 12 OFFSET $7`, [...values,(page-1)*12]);
+    const { rows } = await pool.query(`SELECT p.*,s.name AS seller,s.demo,c.name AS category FROM products p JOIN sellers s ON s.id=p.seller_id JOIN categories c ON c.id=p.category_id WHERE ${where} ORDER BY ${sort} LIMIT 12 OFFSET $7`, [...values,(page-1)*12]);
     const { rows: [count] } = await pool.query(`SELECT count(*)::integer AS total FROM products p WHERE ${where}`, values);
     res.json({ products:rows, total:count.total, page, pages:Math.ceil(count.total/12) });
   });
   app.get('/api/products/:id', async (req,res) => {
     const id = integer(req.params.id,'Product ID');
-    const { rows:[p] } = await pool.query('SELECT p.*,s.name AS seller,s.city,c.name AS category FROM products p JOIN sellers s ON s.id=p.seller_id JOIN categories c ON c.id=p.category_id WHERE p.id=$1 AND p.active AND p.approved AND EXISTS(SELECT 1 FROM sellers visible_shop WHERE visible_shop.id=p.seller_id AND visible_shop.operating_state=$$active$$ AND visible_shop.is_approved)',[id]);
+    const { rows:[p] } = await pool.query('SELECT p.*,s.name AS seller,s.city,s.demo,c.name AS category FROM products p JOIN sellers s ON s.id=p.seller_id JOIN categories c ON c.id=p.category_id WHERE p.id=$1 AND p.active AND p.approved AND EXISTS(SELECT 1 FROM sellers visible_shop WHERE visible_shop.id=p.seller_id AND visible_shop.operating_state=$$active$$ AND visible_shop.is_approved)',[id]);
     if (!p) throw new HttpError(404,'Product not found');
     // This page combines relational product data and document reviews.
-    const reviews = await mongo.collection('reviews').find({ productId:id },{ projection:{ _id:0 } }).sort({ createdAt:-1 }).limit(20).toArray();
-    res.json({ ...p, reviews });
+    const reviews = await mongo.collection('reviews').find({ productId:id,userId:{$exists:true} },{ projection:{ _id:0 } }).sort({ createdAt:-1 }).limit(20).toArray();
+    const canReview = !p.demo && !!req.user && !!(await pool.query("SELECT 1 FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.product_id=$1 AND o.buyer_user_id=$2 AND o.status='delivered' LIMIT 1",[id,req.user.id])).rowCount;
+    res.json({ ...p, reviews, canReview });
   });
   app.get('/api/admin/products/:id', admin, async (req, res) => {
     res.set('Cache-Control', 'no-store');
@@ -85,12 +86,15 @@ export function createApp(pool, mongo) {
   });
   app.post('/api/orders/recover',writeLimit,async(req,res)=>{const key=text(req.body.key,'Checkout key',36,36);if(!/^[0-9a-f-]{36}$/i.test(key))throw new HttpError(400,'Invalid checkout key');const {rows:[saved]}=await pool.query('SELECT response FROM checkout_requests WHERE request_key=$1 AND buyer_user_id IS NOT DISTINCT FROM $2::int',[key,req.user?.id||null]);if(!saved)throw new HttpError(404,'No completed checkout found for this request. You can retry your order.');res.json(saved.response);});
   app.post('/api/orders', writeLimit, async (req,res) => res.status(201).json(await placeOrder(pool, req.body, req.get('Idempotency-Key'), req.user?.id)));
-  app.post('/api/products/:id/reviews', writeLimit, async (req,res) => {
+  app.post('/api/products/:id/reviews', writeLimit, auth.required, async (req,res) => {
     const id = integer(req.params.id,'Product ID');
-    const { rowCount } = await pool.query('SELECT id FROM products WHERE id=$1 AND active AND approved AND EXISTS(SELECT 1 FROM sellers WHERE sellers.id=products.seller_id AND operating_state=$$active$$ AND is_approved)',[id]);
-    if (!rowCount) throw new HttpError(404,'Product not found');
-    const review = { productId:id, author:text(req.body?.author,'Name',2,80), rating:integer(req.body?.rating,'Rating',1,5), comment:text(req.body?.comment,'Review',5,1000), createdAt:new Date() };
-    await mongo.collection('reviews').insertOne(review);
+    const { rows:[product] } = await pool.query("SELECT p.id,s.demo FROM products p JOIN sellers s ON s.id=p.seller_id WHERE p.id=$1 AND p.active AND p.approved AND s.operating_state='active' AND s.is_approved",[id]);
+    if (!product) throw new HttpError(404,'Product not found');
+    if (product.demo) throw new HttpError(403,'Reviews are unavailable for demonstration listings.');
+    const { rowCount } = await pool.query("SELECT 1 FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.product_id=$1 AND o.buyer_user_id=$2 AND o.status='delivered' LIMIT 1",[id,req.user.id]);
+    if (!rowCount) throw new HttpError(403,'You can review this product after your account order is delivered.');
+    const review = { productId:id,userId:req.user.id,author:req.user.name,rating:integer(req.body?.rating,'Rating',1,5),comment:text(req.body?.comment,'Review',5,1000),createdAt:new Date() };
+    await mongo.collection('reviews').updateOne({productId:id,userId:req.user.id},{$set:review},{upsert:true});
     res.status(201).json({ message:'Review published' });
   });
   app.post('/api/events', writeLimit, async (req,res) => {

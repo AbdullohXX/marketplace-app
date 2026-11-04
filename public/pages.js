@@ -13,8 +13,8 @@ const link = (text, href, className = '') => {
   return element;
 };
 const image = product => {
-  const element = el('img');
-  element.src = `/assets/product-${((product.id - 1) % 12) + 1}.svg`;
+  const element = el('img', product.media_url ? 'product-photo' : '');
+  element.src = product.media_url || `/assets/product-${((product.id - 1) % 12) + 1}.svg`;
   element.alt = '';
   element.width = 480;
   element.height = 480;
@@ -39,7 +39,7 @@ async function categories() {
   app.replaceChildren(heading('THE WHOLE COLLECTION', 'Explore by category', 'Find the things you need and the things you did not know you wanted.'));
   const grid = el('div', 'directory-grid categories-grid');
   for (const [index, category] of items.entries()) {
-    const matches = (category.preview_ids || []).map(id => ({ id }));
+    const matches = (category.preview_ids || []).map((id,i) => ({ id,media_url:category.preview_media?.[i] }));
     const tile = link('', `/?category=${category.id}#collection`, 'directory-tile category-tile');
     const art = el('div', 'directory-art');
     for (const product of matches.slice(0, 2)) art.append(image(product));
@@ -56,12 +56,12 @@ async function shops() {
   app.replaceChildren(heading('THE PEOPLE BEHIND THE FINDS', 'Meet the shops', 'Explore independent sellers from across Uzbekistan.'));
   const grid = el('div', 'directory-grid shops-grid');
   for (const [index, seller] of sellers.entries()) {
-    const matches = (seller.preview_ids || []).map(id => ({ id }));
+    const matches = (seller.preview_ids || []).map((id,i) => ({ id,media_url:seller.preview_media?.[i] }));
     const tile = link('', seller.slug?`/shops/${seller.slug}`:`/shop.html?id=${seller.id}`, 'directory-tile shop-tile');
     const art = el('div', 'directory-art');
     for (const product of matches.slice(0, 3)) art.append(image(product));
     const copy = el('div', 'directory-copy');
-    copy.append(el('small', '', `${seller.city} · ${seller.product_count} finds`), el('h2', '', seller.name), el('span', '', 'Visit shop ↗'));
+    copy.append(el('small', '', `${seller.city} · ${seller.product_count} products${seller.demo?' · Demo shop':''}`), el('h2', '', seller.name), el('span', '', 'Visit shop ↗'));
     tile.append(art, copy);
     grid.append(tile);
   }

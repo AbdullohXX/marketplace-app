@@ -1,6 +1,6 @@
 # Savdo — a multi-seller marketplace
 
-A Big Data course project based on the attached *Complete 3-Week Project Guide*. Local Uzbek sellers offer products priced in whole UZS. Customers search the catalog, read document-backed reviews, keep a bag, and place cash-on-delivery demo orders. A single checkout produces one order and a fulfillment/payout record for each seller.
+A Big Data course project based on the attached *Complete 3-Week Project Guide*. Savdo has clearly labelled demonstration shops and products priced in whole UZS; approved real sellers can join through a moderated workspace. Customers search the catalog, keep a bag, and place cash-on-delivery demo orders. Reviews require a delivered account order and cannot be posted to sample listings. A single checkout produces one order and a fulfillment/payout record for each seller.
 
 ## Run locally
 
