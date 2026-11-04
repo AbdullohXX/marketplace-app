@@ -1,0 +1,144 @@
+{
+  "commit": "2856d1042a457d02c9423c614cb2dd10f252240b",
+  "deploy": "dep-dbljo6bm8hqs739fugj0",
+  "checks": [
+    {
+      "health": {
+        "status": "ok",
+        "postgres": "connected",
+        "mongodb": "connected"
+      },
+      "requestIdPresent": true
+    },
+    {
+      "sessionPersisted": true,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": true,
+      "emailDelivery": false
+    },
+    {
+      "path": "/api/admin/users",
+      "status": 401
+    },
+    {
+      "path": "/api/seller/shops",
+      "status": 401
+    },
+    {
+      "path": "/api/account/orders",
+      "status": 401
+    },
+    {
+      "categories": 5,
+      "publicProducts": 12
+    },
+    {
+      "width": 360,
+      "route": "/",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "/register",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "/login",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "/seller",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "/admin",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/register",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/login",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/seller",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/admin",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "route": "/",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "route": "/register",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "route": "/login",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "route": "/seller",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "route": "/admin",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/register",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/login",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/seller",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/admin",
+      "overflow": false
+    },
+    {
+      "bannerControls": true,
+      "bagDrawer": true,
+      "cartSurvivesRefresh": true,
+      "consoleErrors": []
+    }
+  ],
+  "limits": "No production user, order or seller application was created. One add_to_cart analytics event may have been recorded by the browser smoke test."
+}

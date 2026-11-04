@@ -8,7 +8,7 @@ window.addEventListener('savdo:catalogready',async()=>{
   const hero=document.querySelector('.hero');if(!hero)return;
   const region=element('section','discover-banner');region.setAttribute('aria-label','Featured collections');
   const content=element('div','discover-slides');const dots=element('div','discover-dots');let active=0;const slides=[];const controls=[];
-  const edits=[['Everyday essentials.\nExtraordinary finds.','Discover the electronics collection.',1],['A little care\nfor your home.','Explore thoughtful pieces for everyday living.',3],['Find your\neveryday style.','Discover the fashion collection.',2]];
+  const edits=[['Everyday essentials.\nExtraordinary finds.','Discover the electronics collection.',1],['A little care\nfor your home.','Explore thoughtful pieces for everyday living.',2],['Find your\neveryday style.','Discover the fashion collection.',3]];
   categories.slice(0,3).forEach((category,index)=>{
    const [heading,description,imageId]=edits[index];
    const slide=element('div',`discover-slide discover-slide-${index}`);slide.hidden=index!==0;

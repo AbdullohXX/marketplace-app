@@ -33,3 +33,7 @@ Directory strategy comparison on 1,013 development products: previous strategy m
 Email sending, verification and password recovery delivery are disabled as requested. Accounts can sign in and save applications/drafts; submission, publication and invitation acceptance retain verification gates until delivery is enabled. SMTP_URL, MAIL_FROM and APP_URL activate the implemented email flow later.
 
 The platform continues to record demonstration cash-on-delivery orders: no real payment settlement, shipping, returns or warehouse integration. Variant combinations are entered as distinct rows rather than generated automatically. Store collections are configured through structured JSON and featured product IDs. No unrestricted HTML is accepted. Order lookup in the admin workspace is read-only; fulfillment actions are in the authorized seller order workspace. Native browser zoom, comprehensive screen-reader/contrast certification and independent multi-connection PostgreSQL concurrency remain future validation work.
+
+## Production verification
+
+The release reached live status on Render on 4 November 2026. Twenty-seven live smoke observations passed: PostgreSQL/MongoDB health, persisted Secure/HttpOnly/SameSite sessions, private API denial, catalog queries, public/account/workspace layouts at four widths, manual banner controls, bag drawer and cart persistence after refresh. No production user or fulfillment order was created. Evidence: evidence/live-deployment-verification.json. A final visual check corrected the home/fashion banner illustration mapping.
